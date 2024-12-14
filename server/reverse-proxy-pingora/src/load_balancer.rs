@@ -27,7 +27,8 @@ impl ProxyHttp for LB {
     async fn upstream_peer(&self, _session: &mut Session,_ctx: &mut ()) -> Result<Box<HttpPeer>> {
         let upstream = self.0.select(b"", 256).unwrap();
         println!("upstream: {:?}", upstream);
-        let peer = Box::new(HttpPeer::new(upstream,true,"one.one.one.one".to_string()));
+        // 注意http和https的区别
+        let peer = Box::new(HttpPeer::new(upstream,false,"one.one.one.one".to_string()));
         Ok(peer)
     }
     async fn upstream_request_filter(
