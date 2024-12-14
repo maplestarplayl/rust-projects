@@ -1,0 +1,7 @@
+**/target
+.env
+.DS_Store
+*.jpg
+*.png
+*.jpeg
+*.webp
