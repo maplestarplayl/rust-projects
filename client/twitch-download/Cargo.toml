@@ -1,0 +1,11 @@
+[package]
+name = "twitch-download"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+reqwest = { version = "0.12.9", features = ["hickory-dns", "http2","rustls-tls"] }
+tokio = { version = "1.39.0", features = ["full"] }
+anyhow = "1.0.80"
+lazy_static = "1.4.0"
+ffmpeg-next = "7.1.0"
