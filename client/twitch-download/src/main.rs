@@ -1,11 +1,10 @@
 use lazy_static::lazy_static;
 use reqwest::Client;
-use std::fs::File;
-use std::io::Write;
 use tokio;
 use std::path::Path;
 use std::collections::HashMap;
-
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
 use tokio::task::JoinSet;
 // Small bonus
 //You can check what this url points to ~
@@ -15,16 +14,23 @@ lazy_static! {
     // need add use_rustls_tls() method to enable http2
     static ref CLIENT: Client = Client::builder().use_rustls_tls().build().unwrap();
 }
+const CONCURRENT_REQUESTS: usize = 50   ;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let ts_files = get_ts_files(get_m3u8_file(URL).await?).await?;
     
     let mut join_set = JoinSet::new();
+    use tokio::sync::Semaphore;
+    use std::sync::Arc;
+
+    let semaphore = Arc::new(Semaphore::new(CONCURRENT_REQUESTS)); 
     for ts_file in ts_files.iter().cloned() {
+        let permit = semaphore.clone().acquire_owned().await.unwrap();
         join_set.spawn(async move {
             if let Err(e) = download_ts_files(&ts_file).await {
                 eprintln!("Error downloading {}: {:?}", ts_file, e);
             }
+            drop(permit);
         });
     }
     ffmpeg_next::init().unwrap();
@@ -45,13 +51,14 @@ async fn main() -> anyhow::Result<()> {
     merge_ts_files(ts_files).unwrap();
     Ok(())
 }
+
 async fn download_ts_files(ts_file: &str) -> anyhow::Result<()> {
     let url = format!("{}/{}", TSURL, ts_file);
     let response = CLIENT.get(url).send().await?;
     let body = response.bytes().await?;
     let file_name = ts_file;
-    let mut file = File::create(&file_name)?;
-    file.write_all(&body)?;
+    let mut file = File::create(&file_name).await?;
+    file.write_all(&body).await?;
     println!("Downloaded {}", file_name);
     Ok(())
 }
