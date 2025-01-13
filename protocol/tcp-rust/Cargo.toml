@@ -1,0 +1,11 @@
+[package]
+name = "tcp-rust"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+etherparse = "0.16.0"
+tappers = "0.4.2"
+
+[patch.crates-io]
+tappers = { git = "https://github.com/maplestarplayl/tappers", branch = "master" }
